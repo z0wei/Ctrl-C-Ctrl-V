@@ -66,7 +66,7 @@ SQL-инъекция — это уязвимость веб-безопаснос
 ### 3.4 UNION-атака (Извлечение нескольких значений из одного столбца.)
 - ' UNION SELECT username || '~' || password FROM users--<br>
 В разных базах данных используется разный синтаксис для конкатенации строк. Для получения более подробной информации см. шпаргалку по SQL-инъекциям.<br>
-portswigger.net/web-security/sql-injection/cheat-sheet<br><details>
+portswigger.net/web-security/sql-injection/cheat-sheet<br></details>
 
 ## 🔍 Анализ базы данных при SQL-инъекциях<details>
 

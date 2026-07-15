@@ -18,6 +18,7 @@ SQL-инъекция — это уязвимость веб-безопаснос
 - admin' --
 - ' OR 1=1; --
 - SELECT * FROM users WHERE username = 'administrator'--' AND password = ''<br>
+
 Измените username параметр, присвоив ему значение:administrator'--
 
 ## 3. UNION-атака (определение колонок)

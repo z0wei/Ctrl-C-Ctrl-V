@@ -436,9 +436,9 @@ Hackvertor сам закодирует все буквы в hex-сущности
 - Всегда проверяйте, какая СУБД используется: синтаксис может отличаться (|| vs CONCAT, комментарии -- vs #).
 
 ### 🔗 Полезные ресурсы
-PortSwigger Web Security Academy — лабораторные работы.
-Hackvertor — расширение для Burp Suite.
-SQL Injection Cheat Sheet — например, от OWASP.
+PortSwigger Web Security Academy — лабораторные работы.<br>
+Hackvertor — расширение для Burp Suite.<br>
+SQL Injection Cheat Sheet — например, от OWASP.<br>
 
 **Главное правило: никогда не доверяйте пользовательскому вводу. Кодируйте, фильтруйте, параметризуйте.**
 

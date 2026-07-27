@@ -105,6 +105,46 @@ if (isAdmin) {
 ```
 Ты видишь URL в коде и переходишь по нему.
 
+---
+
+### 3.3. Контроль доступа через параметры
+
+Роль пользователя хранится в клиент-контролируемом месте.
+
+| Где хранится | Пример | Как взломать |
+| :--- | :--- | :--- |
+| Кука | roleid=1 | Изменить на roleid=2 |
+| Скрытое поле | `<input type="hidden" name="role" value="user">` | Изменить на admin |
+| Параметр URL | ?admin=false | Изменить на true |
+
+Примеры:
+```
+https://site.com/login/home.jsp?admin=true
+https://site.com/login/home.jsp?role=1
+```
+
+---
+
+### 3.4. Обход через платформенные заголовки
+
+Некоторые фреймворки позволяют переопределять URL или метод через заголовки.
+
+#### X-Original-URL — подмена пути
+```
+POST / HTTP/1.1
+X-Original-URL: /admin/deleteUser
+...
+```
+Сервер обрабатывает /admin/deleteUser, а не /.
+
+#### X-HTTP-Method-Override — подмена метода
+```
+POST /admin/deleteUser HTTP/1.1
+X-HTTP-Method-Override: GET
+```
+Сервер обрабатывает как GET.
+
+Другие заголовки:
 
 
 

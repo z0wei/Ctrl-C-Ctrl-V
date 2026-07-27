@@ -97,12 +97,13 @@
 
 Админ-панель находится по сложному URL, но он раскрыт в коде.
 
-Пример:<br>
- ``javascript<br>
-if (isAdmin) {<br>
-    window.location.href = '/administrator-panel-yb556';<br>
-}<br>
-Ты видишь URL в коде и переходишь по нему.<br>
+Пример:
+```javascript
+if (isAdmin) {
+    window.location.href = '/administrator-panel-yb556';
+}
+```
+Ты видишь URL в коде и переходишь по нему.
 
 
 

